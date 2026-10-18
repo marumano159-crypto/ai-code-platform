@@ -115,7 +115,7 @@
             terminal.style.color = '#c9d1d9';
             terminal.textContent = "Running code...";
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/execute/run', {
+                const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/execute/run', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code: editor.getValue(), language: 'python' })
                 });
@@ -133,7 +133,7 @@
             aiPanel.innerHTML = "<em>✨ AI Tutor is thinking...</em>";
             
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/ai/analyze', {
+                const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/ai/analyze', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code: editor.getValue() })
                 });
@@ -151,7 +151,7 @@
             const userEmail = localStorage.getItem("user_email") || "student1@example.com"; 
             
             try {
-                const response = await fetch("http://127.0.0.1:8000/api/snippets/save", {
+                const response = await fetch("https://ai-code-platform-4mbf.onrender.com/api/snippets/save", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

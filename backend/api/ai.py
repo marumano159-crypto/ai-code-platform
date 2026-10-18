@@ -1,11 +1,17 @@
+import os
 from fastapi import APIRouter
 from pydantic import BaseModel
 from google import genai
+from dotenv import load_dotenv
+
+# Load the secrets from the .env file
+load_dotenv()
 
 router = APIRouter()
 
-# Initialize the new Gemini Client
-api_key="YOUR_API_KEY_HERE"
+# Securely fetch the API key from the environment
+api_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 class AIRequest(BaseModel):
     code: str
