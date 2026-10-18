@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - AI Code Platform</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            margin: 0; 
+            display: flex;
+            height: 100vh;
+        }
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: #161b22;
+            border-right: 1px solid #30363d;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h2 {
+            color: #58a6ff;
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+        .nav-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background-color: #21262d;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .nav-item.active {
+            border-color: #58a6ff;
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        .nav-item:hover {
+            background-color: #30363d;
+        }
+        .spacer { flex-grow: 1; }
+        .logout-btn {
+            padding: 12px;
+            background-color: #da3633;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .logout-btn:hover { background-color: #b32d2a; }
+
+        /* Main Content Styles */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        .welcome-banner {
+            background: linear-gradient(135deg, #1f6feb, #3fb950);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            color: white;
+        }
+        .welcome-banner h1 { margin: 0 0 10px 0; }
+        .welcome-banner p { margin: 0; font-size: 1.1rem; opacity: 0.9; }
+        
+        .stats-grid {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            flex: 1;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card h3 { margin: 0 0 10px 0; color: #8b949e; font-size: 0.9rem; }
+        .stat-card .value { font-size: 1.8rem; font-weight: bold; color: #c9d1d9; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>AI Code Platform</h2>
+        <div class="nav-item active">Dashboard</div>
+        <div class="nav-item" onclick="window.location.href='collaborate.html'">Playground</div>
+        <div class="nav-item">My Assignments</div>
+        <div class="nav-item">AI Tutor Chat</div>
+        
+        <div class="spacer"></div>
+        <button id="logoutBtn" class="logout-btn">Log Out</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="welcome-banner">
+            <h1>Welcome back, Student!</h1>
+            <p>Ready to start your next coding challenge?</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Tasks Completed</h3>
+                <div class="value">12 / 15</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Streak</h3>
+                <div class="value">5 Days</div>
+            </div>
+            <div class="stat-card">
+                <h3>Average Score</h3>
+                <div class="value">88%</div>
+            </div>
+        </div>
+
+        <!-- NEW: Join Room Section -->
+        <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #58a6ff;">🚀 Join a Collaborative Room</h3>
+            <p style="color: #8b949e; margin-bottom: 15px;">Enter a Room ID to invite friends and code together in real-time.</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="roomIdInput" placeholder="e.g. MySecretRoom" style="padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: white; flex-grow: 1; font-size: 16px;">
+                <button onclick="joinRoom()" style="padding: 10px 20px; background: #1f6feb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                    Join Room
+                </button>
+            </div>
+        </div>
+
+        <!-- Saved Projects Container -->
+        <div style="margin-top: 40px;">
+            <h3 style="color: #c9d1d9; border-bottom: 1px solid #30363d; padding-bottom: 10px;">💾 My Saved Projects</h3>
+            <div id="projectsList" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <p style="color: #8b949e;">Loading your projects...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Security Check: Verify the user has a token
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = 'login.html';
+        } else {
+            // Fetch the logged-in user's real data
+            fetch('http://127.0.0.1:8000/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Token invalid or expired');
+                return response.json();
+            })
+            .then(data => {
+                // Update the UI with their actual name
+                document.querySelector('.welcome-banner h1').textContent = `Welcome back, ${data.full_name}!`;
+                // Save their email locally so our code snippets can link to it
+                localStorage.setItem('user_email', data.email);
+            })
+            .catch(error => {
+                // If the token is fake or expired, kick them out
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // 2. Fetch and display saved projects
+        async function loadSavedProjects() {
+            const userEmail = localStorage.getItem("user_email") || "student1@example.com";
+            const projectsList = document.getElementById("projectsList");
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/snippets/list/${userEmail}`);
+                const snippets = await response.json();
+
+                if (snippets.length === 0) {
+                    projectsList.innerHTML = "<p style='color: #8b949e;'>No saved projects yet. Jump into the Playground to write some code!</p>";
+                    return;
+                }
+
+                projectsList.innerHTML = ""; // Clear the loading text
+                
+                snippets.forEach(snippet => {
+                    const card = document.createElement("div");
+                    card.style = "background: #21262d; padding: 15px; border-radius: 8px; border: 1px solid #30363d;";
+                    card.innerHTML = `
+                        <h4 style="margin: 0 0 10px 0; color: #58a6ff;">${snippet.title}</h4>
+                        <pre style="background: #010409; padding: 10px; border-radius: 6px; color: #c9d1d9; font-family: Consolas, monospace; font-size: 14px; overflow-x: auto; margin: 0;">${snippet.code}</pre>
+                    `;
+                    projectsList.appendChild(card);
+                });
+            } catch (error) {
+                projectsList.innerHTML = "<p style='color: #ff7b72;'>Error loading saved projects from the database.</p>";
+                console.error("Fetch error:", error);
+            }
+        }
+
+        // Automatically load projects when the dashboard opens
+        window.onload = loadSavedProjects;
+
+        // 3. Logout Functionality
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_email');
+            window.location.href = 'login.html';
+        });
+
+        // 4. NEW: Join Dynamic Room Logic
+        function joinRoom() {
+            const roomId = document.getElementById("roomIdInput").value.trim();
+            if (roomId) {
+                // Redirect to the playground and pass the room name in the URL
+                window.location.href = `collaborate.html?room=${roomId}`;
+            } else {
+                alert("Please enter a Room ID!");
+            }
+        }
+    </script>
+
+</body>
+</html>

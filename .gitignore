@@ -1,0 +1,11 @@
+# Python caches and environments
+__pycache__/
+.venv/
+venv/
+env/
+
+# Secret API keys and environment variables
+.env
+
+# Database files (optional, but good practice if using SQLite locally, though you use Postgres)
+*.db

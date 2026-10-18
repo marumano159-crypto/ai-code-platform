@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Collaborative IDE</title>
+    
+    <!-- CodeMirror Core CSS & Dracula Dark Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            margin: 0; 
+            padding: 40px; 
+        }
+        h2 { color: #58a6ff; margin-top: 0; }
+        .status-badge { font-size: 14px; color: #3fb950; margin-left: 10px; }
+        
+        /* Make the CodeMirror editor look like a real IDE */
+        .CodeMirror {
+            height: 500px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            font-size: 16px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button onclick="window.location.href='student-dashboard.html'" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                ⬅ Back
+            </button>
+            <!-- UPDATED: Dynamic Room Header -->
+            <h2 style="margin: 0;">Room: <span id="roomNameDisplay" style="color: #c9d1d9;">Python-101</span> <span class="status-badge" id="status">(Connecting...)</span></h2>
+        </div>
+        
+        <!-- The Action Buttons -->
+        <div>
+            <!-- Ask AI Button -->
+            <button id="aiBtn" style="padding: 10px 20px; background: #6e40c9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
+                ✨ Ask AI Tutor
+            </button>
+            
+            <!-- Save Code Button -->
+            <button onclick="saveMyCode()" style="padding: 10px 20px; background: #2ea043; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
+                💾 Save Code
+            </button>
+
+            <!-- Run Code Button -->
+            <button id="runBtn" style="padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                ▶ Run Code
+            </button>
+        </div>
+    </div>
+    
+    <textarea id="codeEditor"></textarea>
+
+    <!-- AI Feedback Panel -->
+    <div id="aiPanel" style="display: none; background: #21262d; border-left: 4px solid #8957e5; padding: 15px; margin-top: 20px; border-radius: 8px; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; white-space: pre-wrap; line-height: 1.5;"></div>
+
+    <h3 style="margin-top: 20px; color: #8b949e;">Terminal Output</h3>
+    <pre id="terminal" style="background: #010409; padding: 15px; border-radius: 8px; border: 1px solid #30363d; min-height: 100px; color: #c9d1d9; font-family: 'Consolas', monospace; white-space: pre-wrap; margin-top: 0;"></pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+
+    <script>
+        const editorElement = document.getElementById('codeEditor');
+        const editor = CodeMirror.fromTextArea(editorElement, {
+            mode: "python", theme: "dracula", lineNumbers: true, indentUnit: 4, matchBrackets: true
+        });
+        editor.setSize(null, 350); 
+
+        const statusText = document.getElementById('status');
+        const terminal = document.getElementById('terminal');
+        const runBtn = document.getElementById('runBtn');
+        const aiBtn = document.getElementById('aiBtn');
+        const aiPanel = document.getElementById('aiPanel');
+        
+        // UPDATED: Dynamic WebSocket Logic
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentRoom = urlParams.get('room') || 'Public-Lobby';
+        
+        document.getElementById('roomNameDisplay').textContent = currentRoom;
+        const ws = new WebSocket(`ws://127.0.0.1:8000/ws/code/${currentRoom}`);
+
+        ws.onopen = () => {
+            statusText.textContent = "(🟢 Live)";
+            if (!editor.getValue()) {
+                editor.setValue("def hello_world():\n    print('Welcome to the Live AI Code Platform!')\n\nhello_world()");
+            }
+        };
+
+        editor.on('change', (instance, changeObj) => {
+            if (changeObj.origin !== 'setValue') ws.send(instance.getValue());
+        });
+
+        ws.onmessage = (event) => {
+            if (editor.getValue() !== event.data) {
+                const cursor = editor.getCursor();
+                editor.setValue(event.data);
+                editor.setCursor(cursor);
+            }
+        };
+
+        // Execution Logic
+        runBtn.addEventListener('click', async () => {
+            terminal.style.color = '#c9d1d9';
+            terminal.textContent = "Running code...";
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/execute/run', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: editor.getValue(), language: 'python' })
+                });
+                const data = await response.json();
+                terminal.style.color = data.error ? '#ff7b72' : '#3fb950';
+                terminal.textContent = data.error || data.output || "Code executed successfully.";
+            } catch (err) {
+                terminal.style.color = '#ff7b72'; terminal.textContent = "Error connecting to execution server.";
+            }
+        });
+
+        // AI Tutor Logic
+        aiBtn.addEventListener('click', async () => {
+            aiPanel.style.display = 'block';
+            aiPanel.innerHTML = "<em>✨ AI Tutor is thinking...</em>";
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/ai/analyze', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: editor.getValue() })
+                });
+                const data = await response.json();
+                // Replace markdown-style bold with HTML bold for UI
+                aiPanel.innerHTML = data.analysis.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+            } catch (err) {
+                aiPanel.innerHTML = "<span style='color: #ff7b72'>Error connecting to AI Tutor.</span>";
+            }
+        });
+
+        // Save Code Logic
+        async function saveMyCode() {
+            const currentCode = editor.getValue();
+            const userEmail = localStorage.getItem("user_email") || "student1@example.com"; 
+            
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/snippets/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: `Saved from ${currentRoom}`,
+                        code: currentCode,
+                        language: "python",
+                        user_email: userEmail
+                    })
+                });
+
+                if (response.ok) {
+                    alert("✅ Code successfully saved to database!");
+                } else {
+                    alert("❌ Failed to save code.");
+                }
+            } catch (error) {
+                console.error("Error saving code:", error);
+            }
+        }
+    </script>
+</body>
+</html>
