@@ -10,6 +10,7 @@ router = APIRouter()
 class CodePayload(BaseModel):
     code: str
     language: str = "python"
+    user_input: str = ""  # Accepts pre-typed input from the frontend
 
 @router.post("/run")
 async def run_code(payload: CodePayload):
@@ -23,9 +24,10 @@ async def run_code(payload: CodePayload):
 
     try:
         # 2. Execute the file using Python and capture the terminal output
-        # We use a 5-second timeout to prevent infinite loops from crashing the server
+        # The 'input' parameter pipes the frontend text directly into Python's stdin
         result = subprocess.run(
             ["python", temp_filepath],
+            input=payload.user_input,
             capture_output=True,
             text=True,
             timeout=5

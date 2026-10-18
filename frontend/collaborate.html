@@ -37,7 +37,6 @@
             <button onclick="window.location.href='student-dashboard.html'" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
                 ⬅ Back
             </button>
-            <!-- UPDATED: Dynamic Room Header -->
             <h2 style="margin: 0;">Room: <span id="roomNameDisplay" style="color: #c9d1d9;">Python-101</span> <span class="status-badge" id="status">(Connecting...)</span></h2>
         </div>
         
@@ -65,6 +64,10 @@
     <!-- AI Feedback Panel -->
     <div id="aiPanel" style="display: none; background: #21262d; border-left: 4px solid #8957e5; padding: 15px; margin-top: 20px; border-radius: 8px; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; white-space: pre-wrap; line-height: 1.5;"></div>
 
+    <!-- Standard Input Area -->
+    <h3 style="margin-top: 20px; color: #8b949e;">User Input (stdin)</h3>
+    <textarea id="userInput" placeholder="Type your inputs here before running. Separate multiple inputs with new lines (Enter key)..." style="width: 100%; height: 80px; background: #010409; border: 1px solid #30363d; border-radius: 8px; color: #c9d1d9; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; box-sizing: border-box;"></textarea>
+
     <h3 style="margin-top: 20px; color: #8b949e;">Terminal Output</h3>
     <pre id="terminal" style="background: #010409; padding: 15px; border-radius: 8px; border: 1px solid #30363d; min-height: 100px; color: #c9d1d9; font-family: 'Consolas', monospace; white-space: pre-wrap; margin-top: 0;"></pre>
 
@@ -84,12 +87,14 @@
         const aiBtn = document.getElementById('aiBtn');
         const aiPanel = document.getElementById('aiPanel');
         
-        // UPDATED: Dynamic WebSocket Logic
+        // Dynamic Room & Live Secure WebSocket
         const urlParams = new URLSearchParams(window.location.search);
         const currentRoom = urlParams.get('room') || 'Public-Lobby';
         
         document.getElementById('roomNameDisplay').textContent = currentRoom;
-        const ws = new WebSocket(`ws://127.0.0.1:8000/ws/code/${currentRoom}`);
+        
+        // Routed to live Render API securely
+        const ws = new WebSocket(`wss://ai-code-platform-4mbf.onrender.com/ws/code/${currentRoom}`);
 
         ws.onopen = () => {
             statusText.textContent = "(🟢 Live)";
@@ -110,14 +115,18 @@
             }
         };
 
-        // Execution Logic
+        // Execution Logic with User Input
         runBtn.addEventListener('click', async () => {
             terminal.style.color = '#c9d1d9';
             terminal.textContent = "Running code...";
             try {
                 const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/execute/run', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: editor.getValue(), language: 'python' })
+                    body: JSON.stringify({ 
+                        code: editor.getValue(), 
+                        language: 'python',
+                        user_input: document.getElementById('userInput').value // Sends textbox data to backend
+                    })
                 });
                 const data = await response.json();
                 terminal.style.color = data.error ? '#ff7b72' : '#3fb950';
@@ -138,7 +147,6 @@
                     body: JSON.stringify({ code: editor.getValue() })
                 });
                 const data = await response.json();
-                // Replace markdown-style bold with HTML bold for UI
                 aiPanel.innerHTML = data.analysis.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
             } catch (err) {
                 aiPanel.innerHTML = "<span style='color: #ff7b72'>Error connecting to AI Tutor.</span>";
