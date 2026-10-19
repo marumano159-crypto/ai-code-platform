@@ -31,19 +31,24 @@
 </head>
 <body>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; gap: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+        <!-- Left Side: Back Button & Room Name -->
+        <div style="display: flex; align-items: center; gap: 15px; white-space: nowrap;">
             <button onclick="window.location.href='student-dashboard.html'" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
                 ⬅ Back
             </button>
-            <h2 style="margin: 0;">Room: <span id="roomNameDisplay" style="color: #c9d1d9;">Python-101</span> <span class="status-badge" id="status">(Connecting...)</span></h2>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                Room: <span id="roomNameDisplay" style="color: #c9d1d9;">Python-101</span> 
+                <span class="status-badge" id="status" style="margin: 0;">(Connecting...)</span>
+            </h2>
         </div>
         
-        <div>
-            <button id="aiBtn" style="padding: 10px 20px; background: #6e40c9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
+        <!-- Right Side: Action Buttons -->
+        <div style="display: flex; gap: 10px;">
+            <button id="aiBtn" style="padding: 10px 20px; background: #6e40c9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
                 ✨ Ask AI Tutor
             </button>
-            <button onclick="saveMyCode()" style="padding: 10px 20px; background: #2ea043; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
+            <button onclick="saveMyCode()" style="padding: 10px 20px; background: #2ea043; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
                 💾 Save Code
             </button>
             <button id="runBtn" style="padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
