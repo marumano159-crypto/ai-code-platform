@@ -110,22 +110,25 @@
             }
         };
 
-        // 2. NEW: Real-Time Execution Engine
+        // 2. Real-Time Execution Engine with UI State
         let execWs = null;
 
         runBtn.addEventListener('click', () => {
+            // --- NEW: Disable button to prevent spam clicks ---
+            runBtn.disabled = true;
+            runBtn.innerHTML = "⏳ Running...";
+            runBtn.style.cursor = "not-allowed";
+            runBtn.style.opacity = "0.7";
+
             terminal.style.color = '#c9d1d9';
             terminal.textContent = "Connecting to execution engine...\n";
             liveInput.focus();
             
-            // Close previous execution connection if it exists
             if (execWs) execWs.close();
-
-            // Connect to the new WebSocket run endpoint
             execWs = new WebSocket('wss://ai-code-platform-4mbf.onrender.com/api/execute/ws/run');
 
             execWs.onopen = () => {
-                terminal.textContent = ""; // Clear terminal
+                terminal.textContent = ""; 
                 execWs.send(JSON.stringify({ code: editor.getValue() }));
             };
 
@@ -148,6 +151,12 @@
             execWs.onclose = () => {
                 terminal.style.color = '#8b949e';
                 terminal.textContent += "\n[Process Exited]";
+                
+                // --- NEW: Re-enable the button when finished ---
+                runBtn.disabled = false;
+                runBtn.innerHTML = "▶ Run Code";
+                runBtn.style.cursor = "pointer";
+                runBtn.style.opacity = "1";
             };
         });
 
@@ -165,10 +174,16 @@
             }
         });
 
-        // 4. AI Tutor Logic
+        // 4. AI Tutor Logic with UI State
         aiBtn.addEventListener('click', async () => {
+            // --- NEW: Disable button while waiting for Gemini API ---
+            aiBtn.disabled = true;
+            aiBtn.innerHTML = "⏳ Thinking...";
+            aiBtn.style.cursor = "not-allowed";
+            aiBtn.style.opacity = "0.7";
+
             aiPanel.style.display = 'block';
-            aiPanel.innerHTML = "<em>✨ AI Tutor is thinking...</em>";
+            aiPanel.innerHTML = "<em>✨ AI Tutor is reading your code...</em>";
             
             try {
                 const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/ai/analyze', {
@@ -179,6 +194,12 @@
                 aiPanel.innerHTML = data.analysis.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
             } catch (err) {
                 aiPanel.innerHTML = "<span style='color: #ff7b72'>Error connecting to AI Tutor.</span>";
+            } finally {
+                // --- NEW: Re-enable the button after AI replies ---
+                aiBtn.disabled = false;
+                aiBtn.innerHTML = "✨ Ask AI Tutor";
+                aiBtn.style.cursor = "pointer";
+                aiBtn.style.opacity = "1";
             }
         });
 
