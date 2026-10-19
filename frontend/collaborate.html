@@ -122,7 +122,7 @@
             if (execWs) execWs.close();
 
             // Connect to the new WebSocket run endpoint
-            execWs = new WebSocket('wss://ai-code-platform-4mbf.onrender.com/ws/run');
+            execWs = new WebSocket('wss://ai-code-platform-4mbf.onrender.com/api/execute/ws/run');
 
             execWs.onopen = () => {
                 terminal.textContent = ""; // Clear terminal
