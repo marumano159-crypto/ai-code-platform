@@ -20,9 +20,8 @@
         h2 { color: #58a6ff; margin-top: 0; }
         .status-badge { font-size: 14px; color: #3fb950; margin-left: 10px; }
         
-        /* Make the CodeMirror editor look like a real IDE */
         .CodeMirror {
-            height: 500px;
+            height: 450px;
             border-radius: 8px;
             border: 1px solid #30363d;
             font-size: 16px;
@@ -32,7 +31,7 @@
 </head>
 <body>
 
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <button onclick="window.location.href='student-dashboard.html'" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
                 ⬅ Back
@@ -40,19 +39,13 @@
             <h2 style="margin: 0;">Room: <span id="roomNameDisplay" style="color: #c9d1d9;">Python-101</span> <span class="status-badge" id="status">(Connecting...)</span></h2>
         </div>
         
-        <!-- The Action Buttons -->
         <div>
-            <!-- Ask AI Button -->
             <button id="aiBtn" style="padding: 10px 20px; background: #6e40c9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
                 ✨ Ask AI Tutor
             </button>
-            
-            <!-- Save Code Button -->
             <button onclick="saveMyCode()" style="padding: 10px 20px; background: #2ea043; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-right: 10px;">
                 💾 Save Code
             </button>
-
-            <!-- Run Code Button -->
             <button id="runBtn" style="padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
                 ▶ Run Code
             </button>
@@ -64,12 +57,15 @@
     <!-- AI Feedback Panel -->
     <div id="aiPanel" style="display: none; background: #21262d; border-left: 4px solid #8957e5; padding: 15px; margin-top: 20px; border-radius: 8px; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; white-space: pre-wrap; line-height: 1.5;"></div>
 
-    <!-- Standard Input Area -->
-    <h3 style="margin-top: 20px; color: #8b949e;">User Input (stdin)</h3>
-    <textarea id="userInput" placeholder="Type your inputs here before running. Separate multiple inputs with new lines (Enter key)..." style="width: 100%; height: 80px; background: #010409; border: 1px solid #30363d; border-radius: 8px; color: #c9d1d9; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; box-sizing: border-box;"></textarea>
-
-    <h3 style="margin-top: 20px; color: #8b949e;">Terminal Output</h3>
-    <pre id="terminal" style="background: #010409; padding: 15px; border-radius: 8px; border: 1px solid #30363d; min-height: 100px; color: #c9d1d9; font-family: 'Consolas', monospace; white-space: pre-wrap; margin-top: 0;"></pre>
+    <!-- NEW: Interactive Real-Time Terminal -->
+    <h3 style="margin-top: 20px; color: #8b949e;">Interactive Terminal</h3>
+    <div style="background: #010409; padding: 15px; border-radius: 8px; border: 1px solid #30363d; min-height: 150px; display: flex; flex-direction: column;">
+        <pre id="terminal" style="color: #c9d1d9; font-family: 'Consolas', monospace; white-space: pre-wrap; margin: 0;"></pre>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <span style="color: #3fb950; font-family: 'Consolas', monospace; font-weight: bold;">></span>
+            <input type="text" id="liveInput" placeholder="Type here and press Enter to send to the running script..." style="flex-grow: 1; background: transparent; border: none; color: #c9d1d9; font-family: 'Consolas', monospace; outline: none; font-size: 14px;">
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
@@ -79,27 +75,26 @@
         const editor = CodeMirror.fromTextArea(editorElement, {
             mode: "python", theme: "dracula", lineNumbers: true, indentUnit: 4, matchBrackets: true
         });
-        editor.setSize(null, 350); 
+        editor.setSize(null, 450); 
 
         const statusText = document.getElementById('status');
         const terminal = document.getElementById('terminal');
+        const liveInput = document.getElementById('liveInput');
         const runBtn = document.getElementById('runBtn');
         const aiBtn = document.getElementById('aiBtn');
         const aiPanel = document.getElementById('aiPanel');
         
-        // Dynamic Room & Live Secure WebSocket
+        // 1. Collaborative Coding WebSocket
         const urlParams = new URLSearchParams(window.location.search);
         const currentRoom = urlParams.get('room') || 'Public-Lobby';
-        
         document.getElementById('roomNameDisplay').textContent = currentRoom;
         
-        // Routed to live Render API securely
         const ws = new WebSocket(`wss://ai-code-platform-4mbf.onrender.com/ws/code/${currentRoom}`);
 
         ws.onopen = () => {
             statusText.textContent = "(🟢 Live)";
             if (!editor.getValue()) {
-                editor.setValue("def hello_world():\n    print('Welcome to the Live AI Code Platform!')\n\nhello_world()");
+                editor.setValue("print('Welcome to the Interactive Terminal!')\nname = input('What is your name? ')\nprint(f'Hello, {name}!')");
             }
         };
 
@@ -115,28 +110,62 @@
             }
         };
 
-        // Execution Logic with User Input
-        runBtn.addEventListener('click', async () => {
+        // 2. NEW: Real-Time Execution Engine
+        let execWs = null;
+
+        runBtn.addEventListener('click', () => {
             terminal.style.color = '#c9d1d9';
-            terminal.textContent = "Running code...";
-            try {
-                const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/execute/run', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        code: editor.getValue(), 
-                        language: 'python',
-                        user_input: document.getElementById('userInput').value // Sends textbox data to backend
-                    })
-                });
-                const data = await response.json();
-                terminal.style.color = data.error ? '#ff7b72' : '#3fb950';
-                terminal.textContent = data.error || data.output || "Code executed successfully.";
-            } catch (err) {
-                terminal.style.color = '#ff7b72'; terminal.textContent = "Error connecting to execution server.";
+            terminal.textContent = "Connecting to execution engine...\n";
+            liveInput.focus();
+            
+            // Close previous execution connection if it exists
+            if (execWs) execWs.close();
+
+            // Connect to the new WebSocket run endpoint
+            execWs = new WebSocket('wss://ai-code-platform-4mbf.onrender.com/ws/run');
+
+            execWs.onopen = () => {
+                terminal.textContent = ""; // Clear terminal
+                execWs.send(JSON.stringify({ code: editor.getValue() }));
+            };
+
+            execWs.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === "stdout") {
+                    terminal.style.color = '#c9d1d9';
+                    terminal.textContent += msg.data;
+                } else if (msg.type === "stderr") {
+                    terminal.style.color = '#ff7b72';
+                    terminal.textContent += msg.data;
+                }
+            };
+
+            execWs.onerror = () => {
+                terminal.style.color = '#ff7b72';
+                terminal.textContent += "\nError: Connection to execution server failed.";
+            };
+            
+            execWs.onclose = () => {
+                terminal.style.color = '#8b949e';
+                terminal.textContent += "\n[Process Exited]";
+            };
+        });
+
+        // 3. NEW: Send Input from the interactive prompt to the running script
+        liveInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = liveInput.value;
+                terminal.textContent += text + "\n"; // Echo user typing in the terminal
+                
+                if (execWs && execWs.readyState === WebSocket.OPEN) {
+                    execWs.send(text);
+                }
+                
+                liveInput.value = ''; // Clear the input box immediately
             }
         });
 
-        // AI Tutor Logic
+        // 4. AI Tutor Logic
         aiBtn.addEventListener('click', async () => {
             aiPanel.style.display = 'block';
             aiPanel.innerHTML = "<em>✨ AI Tutor is thinking...</em>";
@@ -153,7 +182,7 @@
             }
         });
 
-        // Save Code Logic
+        // 5. Save Code Logic
         async function saveMyCode() {
             const currentCode = editor.getValue();
             const userEmail = localStorage.getItem("user_email") || "student1@example.com"; 
@@ -170,11 +199,8 @@
                     })
                 });
 
-                if (response.ok) {
-                    alert("✅ Code successfully saved to database!");
-                } else {
-                    alert("❌ Failed to save code.");
-                }
+                if (response.ok) alert("✅ Code successfully saved to database!");
+                else alert("❌ Failed to save code.");
             } catch (error) {
                 console.error("Error saving code:", error);
             }
