@@ -43,8 +43,12 @@
             </h2>
         </div>
         
-        <!-- Right Side: Action Buttons -->
+        <!-- Right Side: Action Buttons & Language Dropdown -->
         <div style="display: flex; gap: 10px;">
+            <select id="languageSelect" style="padding: 10px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript (Node.js)</option>
+            </select>
             <button id="aiBtn" style="padding: 10px 20px; background: #6e40c9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">
                 ✨ Ask AI Tutor
             </button>
@@ -72,8 +76,10 @@
         </div>
     </div>
 
+    <!-- CodeMirror Scripts for Python AND JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
 
     <script>
         const editorElement = document.getElementById('codeEditor');
@@ -92,7 +98,28 @@
         // 1. Collaborative Coding WebSocket
         const urlParams = new URLSearchParams(window.location.search);
         const currentRoom = urlParams.get('room') || 'Public-Lobby';
-        document.getElementById('roomNameDisplay').textContent = currentRoom;
+        
+        // Set initial room name and language header
+        document.getElementById('roomNameDisplay').innerHTML = `${currentRoom} <span style="color: #8b949e; font-size: 16px;">| Python</span>`;
+        
+        // Handle Editor Syntax Highlighting & UI Change
+        document.getElementById('languageSelect').addEventListener('change', (e) => {
+            const selectedLang = e.target.value;
+            
+            // Change the CodeMirror syntax highlighting rules
+            editor.setOption("mode", selectedLang);
+            
+            // Dynamically update the Room Header to show the active language
+            const langName = selectedLang === "javascript" ? "JavaScript" : "Python";
+            document.getElementById('roomNameDisplay').innerHTML = `${currentRoom} <span style="color: #8b949e; font-size: 16px;">| ${langName}</span>`;
+
+            // Forcefully wipe the editor and insert the correct language template
+            if (selectedLang === "javascript") {
+                editor.setValue("console.log('Hello from Pricol! Node.js is active.');\n\n// Write your JavaScript here");
+            } else if (selectedLang === "python") {
+                editor.setValue("print('Welcome to the Interactive Terminal!')\nname = input('What is your name? ')\nprint(f'Hello, {name}!')");
+            }
+        });
         
         const ws = new WebSocket(`wss://ai-code-platform-4mbf.onrender.com/ws/code/${currentRoom}`);
 
@@ -119,7 +146,6 @@
         let execWs = null;
 
         runBtn.addEventListener('click', () => {
-            // --- NEW: Disable button to prevent spam clicks ---
             runBtn.disabled = true;
             runBtn.innerHTML = "⏳ Running...";
             runBtn.style.cursor = "not-allowed";
@@ -134,7 +160,8 @@
 
             execWs.onopen = () => {
                 terminal.textContent = ""; 
-                execWs.send(JSON.stringify({ code: editor.getValue() }));
+                const selectedLang = document.getElementById('languageSelect').value;
+                execWs.send(JSON.stringify({ code: editor.getValue(), language: selectedLang }));
             };
 
             execWs.onmessage = (event) => {
@@ -157,7 +184,6 @@
                 terminal.style.color = '#8b949e';
                 terminal.textContent += "\n[Process Exited]";
                 
-                // --- NEW: Re-enable the button when finished ---
                 runBtn.disabled = false;
                 runBtn.innerHTML = "▶ Run Code";
                 runBtn.style.cursor = "pointer";
@@ -165,23 +191,22 @@
             };
         });
 
-        // 3. NEW: Send Input from the interactive prompt to the running script
+        // 3. Send Input from the interactive prompt to the running script
         liveInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const text = liveInput.value;
-                terminal.textContent += text + "\n"; // Echo user typing in the terminal
+                terminal.textContent += text + "\n"; 
                 
                 if (execWs && execWs.readyState === WebSocket.OPEN) {
                     execWs.send(text);
                 }
                 
-                liveInput.value = ''; // Clear the input box immediately
+                liveInput.value = ''; 
             }
         });
 
         // 4. AI Tutor Logic with UI State
         aiBtn.addEventListener('click', async () => {
-            // --- NEW: Disable button while waiting for Gemini API ---
             aiBtn.disabled = true;
             aiBtn.innerHTML = "⏳ Thinking...";
             aiBtn.style.cursor = "not-allowed";
@@ -200,7 +225,6 @@
             } catch (err) {
                 aiPanel.innerHTML = "<span style='color: #ff7b72'>Error connecting to AI Tutor.</span>";
             } finally {
-                // --- NEW: Re-enable the button after AI replies ---
                 aiBtn.disabled = false;
                 aiBtn.innerHTML = "✨ Ask AI Tutor";
                 aiBtn.style.cursor = "pointer";
@@ -212,6 +236,7 @@
         async function saveMyCode() {
             const currentCode = editor.getValue();
             const userEmail = localStorage.getItem("user_email") || "student1@example.com"; 
+            const selectedLang = document.getElementById('languageSelect').value;
             
             try {
                 const response = await fetch("https://ai-code-platform-4mbf.onrender.com/api/snippets/save", {
@@ -220,7 +245,7 @@
                     body: JSON.stringify({
                         title: `Saved from ${currentRoom}`,
                         code: currentCode,
-                        language: "python",
+                        language: selectedLang,
                         user_email: userEmail
                     })
                 });
