@@ -95,8 +95,8 @@ class TeacherLogin(BaseModel):
 
 @router.post("/teacher-login")
 def teacher_login(credentials: TeacherLogin):
-    # Hardcoded Enterprise Admin account for your Pricol presentation
-    if credentials.email == "admin@pricol.com" and credentials.password == "admin123":
+    # Updated to specifically accept the teacher@gmail.com account
+    if credentials.email == "teacher@gmail.com" and credentials.password == "admin123":
         return {
             "message": "Teacher login successful",
             "token": "secure-teacher-token-8923", 
