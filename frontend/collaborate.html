@@ -82,6 +82,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
 
     <script>
+        // --- SECURE AUTHENTICATION GUARD (Allows Students & Teachers) ---
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+
+        if (!token && role !== 'teacher') {
+            window.location.href = 'index.html'; // Redirect to login if unauthorized
+        }
+
         const editorElement = document.getElementById('codeEditor');
         const editor = CodeMirror.fromTextArea(editorElement, {
             mode: "python", theme: "dracula", lineNumbers: true, indentUnit: 4, matchBrackets: true
