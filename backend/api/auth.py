@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from pydantic import BaseModel
 import jwt
 import os
 from datetime import datetime, timedelta, timezone
@@ -63,6 +64,7 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
     access_token = jwt.encode(token_data, SECRET_KEY, algorithm="HS256")
     
     return {"access_token": access_token, "token_type": "bearer"}
+
 # This tells FastAPI where our login route is so it can extract the token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -85,3 +87,21 @@ def get_current_user_profile(token: str = Depends(oauth2_scheme), db: Session = 
     
     # 3. Return the user data
     return user
+
+# --- NEW TEACHER AUTHENTICATION ROUTE ---
+class TeacherLogin(BaseModel):
+    email: str
+    password: str
+
+@router.post("/teacher-login")
+def teacher_login(credentials: TeacherLogin):
+    # Hardcoded Enterprise Admin account for your Pricol presentation
+    if credentials.email == "admin@pricol.com" and credentials.password == "admin123":
+        return {
+            "message": "Teacher login successful",
+            "token": "secure-teacher-token-8923", 
+            "user_email": credentials.email,
+            "role": "teacher" # This role flag is the key to our security
+        }
+    
+    raise HTTPException(status_code=401, detail="Invalid teacher credentials or unauthorized access.")

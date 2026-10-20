@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - AI Code Platform</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+        }
+        .login-box {
+            background-color: #161b22;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        .login-box h2 { margin-top: 0; color: #d2a8ff; margin-bottom: 5px; }
+        .login-box p { color: #8b949e; margin-bottom: 25px; font-size: 14px; }
+        input {
+            width: 90%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #8957e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #a371f7; }
+        .error-msg { color: #ff7b72; font-size: 14px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>👨‍🏫 Teacher Portal</h2>
+        <p>Authorized personnel only</p>
+        
+        <input type="email" id="email" placeholder="Teacher Email (e.g., teacher@gmail.com)" value="admin@pricol.com">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        
+        <button id="loginBtn">Secure Login</button>
+        <div id="errorMsg" class="error-msg">Invalid credentials. Access denied.</div>
+    </div>
+
+    <script>
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginBtn.textContent = "Authenticating...";
+            loginBtn.style.opacity = "0.7";
+
+            try {
+                const response = await fetch('https://ai-code-platform-4mbf.onrender.com/api/auth/teacher-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Securely store the token and the role
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user_email', data.user_email);
+                    localStorage.setItem('role', data.role);
+                    
+                    window.location.href = 'teacher-dashboard.html';
+                } else {
+                    errorMsg.style.display = "block";
+                    loginBtn.textContent = "Secure Login";
+                    loginBtn.style.opacity = "1";
+                }
+            } catch (err) {
+                errorMsg.textContent = "Server connection failed.";
+                errorMsg.style.display = "block";
+                loginBtn.textContent = "Secure Login";
+                loginBtn.style.opacity = "1";
+            }
+        });
+    </script>
+</body>
+</html>
