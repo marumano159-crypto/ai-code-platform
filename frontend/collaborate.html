@@ -34,7 +34,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
         <!-- Left Side: Back Button & Room Name -->
         <div style="display: flex; align-items: center; gap: 15px; white-space: nowrap;">
-            <button onclick="window.location.href='student-dashboard.html'" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            <!-- DYNAMIC BACK BUTTON FIX -->
+            <button onclick="const userRole = localStorage.getItem('role'); window.location.href = (userRole === 'teacher') ? 'teacher-dashboard.html' : 'student-dashboard.html';" style="padding: 8px 12px; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; font-weight: bold;">
                 ⬅ Back
             </button>
             <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
