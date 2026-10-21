@@ -38,7 +38,7 @@ async def analyze_code(payload: AIRequest):
         # THE FIX: We use the async client (client.aio) and 'await' it 
         # so it doesn't block the FastAPI server!
         response = await client.aio.models.generate_content(
-            model='gemini-2.5-flash', # Note: Using standard model name for stability
+            model='gemini-3.8-flash', # Note: Using standard model name for stability
             contents=prompt
         )
         return {"analysis": response.text}

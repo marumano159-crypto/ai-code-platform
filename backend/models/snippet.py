@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, Boolean
 from backend.database import Base
 
 class Snippet(Base):
@@ -9,3 +9,6 @@ class Snippet(Base):
     code = Column(Text)
     language = Column(String, default="python")
     user_email = Column(String, index=True)
+    
+    # NEW: Tracks if the teacher has graded this submission
+    is_graded = Column(Boolean, default=False)

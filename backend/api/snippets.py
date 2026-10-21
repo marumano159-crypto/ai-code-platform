@@ -43,3 +43,19 @@ def get_all_snippets(db: Session = Depends(get_db)):
     if not snippets:
         return []
     return snippets
+
+# 4. NEW Route: Mark a specific student snippet as graded
+@router.put("/grade/{snippet_id}")
+def mark_snippet_graded(snippet_id: int, db: Session = Depends(get_db)):
+    # Find the snippet in the database
+    snippet = db.query(Snippet).filter(Snippet.id == snippet_id).first()
+    
+    if not snippet:
+        return {"error": "Snippet not found"}
+    
+    # Update the status and save to database
+    snippet.is_graded = True
+    db.commit()
+    db.refresh(snippet)
+    
+    return {"message": "Successfully marked as graded", "snippet_id": snippet.id}

@@ -83,7 +83,7 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = 'login.html';
 
-        // Fetch ALL snippets from the new admin route
+        // Fetch ALL snippets from the admin route
         async function loadAllSubmissions() {
             const submissionsList = document.getElementById("submissionsList");
             try {
@@ -100,6 +100,12 @@
                 snippets.forEach(snippet => {
                     const card = document.createElement("div");
                     card.className = "student-card";
+                    
+                    // Conditionally render the button based on if it's already graded in the DB
+                    const gradingButton = snippet.is_graded 
+                        ? `<button disabled style="padding: 8px 15px; background: #2ea043; color: white; border: none; border-radius: 6px; cursor: default; font-weight: bold; opacity: 0.8;">✅ Graded</button>`
+                        : `<button onclick="markAsGraded(${snippet.id}, this)" style="padding: 8px 15px; background: #8957e5; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">📝 Mark as Graded</button>`;
+
                     card.innerHTML = `
                         <div class="student-header">
                             <div>
@@ -110,7 +116,7 @@
                         </div>
                         <pre class="code-block">${snippet.code}</pre>
                         <div style="margin-top: 15px; text-align: right;">
-                            <button style="padding: 8px 15px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">✅ Mark as Graded</button>
+                            ${gradingButton}
                         </div>
                     `;
                     submissionsList.appendChild(card);
@@ -121,11 +127,40 @@
             }
         }
 
+        // The Grading Logic Function
+        async function markAsGraded(snippetId, buttonElement) {
+            // Visual feedback while loading
+            buttonElement.innerText = "⏳ Updating...";
+            buttonElement.style.opacity = "0.7";
+
+            try {
+                const response = await fetch(`https://ai-code-platform-4mbf.onrender.com/api/snippets/grade/${snippetId}`, {
+                    method: 'PUT'
+                });
+
+                if (response.ok) {
+                    // Permanently change the button to a green 'Graded' state
+                    buttonElement.innerText = "✅ Graded";
+                    buttonElement.style.backgroundColor = "#2ea043";
+                    buttonElement.style.cursor = "default";
+                    buttonElement.disabled = true;
+                } else {
+                    buttonElement.innerText = "❌ Failed";
+                    buttonElement.style.backgroundColor = "#ff7b72";
+                }
+            } catch (error) {
+                console.error("Error grading snippet:", error);
+                buttonElement.innerText = "Error";
+                buttonElement.style.backgroundColor = "#ff7b72";
+            }
+        }
+
         window.onload = loadAllSubmissions;
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('token');
             localStorage.removeItem('user_email');
+            localStorage.removeItem('role');
             window.location.href = 'login.html';
         });
     </script>
